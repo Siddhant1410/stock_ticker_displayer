@@ -5,7 +5,6 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'stock_service.dart';
 import 'stock_details_screen.dart';
-import 'order_book_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   @override
@@ -194,18 +193,8 @@ class _HomeScreenState extends State<HomeScreen> {
             icon: Icon(Icons.logout),
             onPressed: () => logout(context),
           ),
-          IconButton(
-          icon: Icon(Icons.list), // Order Book Icon
-          tooltip: "View Order Book",
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => OrderBookScreen()),
-            );
-          })
         ],
       ),
-
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(

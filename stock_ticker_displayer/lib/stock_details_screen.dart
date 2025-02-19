@@ -43,54 +43,24 @@ class _StockDetailsScreenState extends State<StockDetailsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.stock['ticker']),
-      ),
-      body: Padding(
+      appBar: AppBar(title: Text(widget.stock['ticker'] ?? 'Stock Details')),
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Stock Information
-            Text(
-              'Latest Price: ${widget.stock['latestPrice']}',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-            SizedBox(height: 4),
-            Text(
-              'Price Change: ${widget.stock['priceDifference']}',
-              style: TextStyle(
-                fontSize: 14,
+            _buildStockInfo("Latest Price", widget.stock['latestPrice']),
+            _buildStockInfo("Price Change", widget.stock['priceDifference'],
                 color: widget.stock['priceDifference'].startsWith('+')
                     ? Colors.green
-                    : Colors.red,
-              ),
-            ),
-            SizedBox(height: 4),
-            Text(
-              'Open: ${widget.stock['openPrice']}',
-              style: TextStyle(fontSize: 14),
-            ),
-            SizedBox(height: 4),
-            Text(
-              'Close: ${widget.stock['closePrice']}',
-              style: TextStyle(fontSize: 14),
-            ),
-            SizedBox(height: 4),
-            Text(
-              'High: ${widget.stock['highPrice']}',
-              style: TextStyle(fontSize: 14),
-            ),
-            SizedBox(height: 4),
-            Text(
-              'Low: ${widget.stock['lowPrice']}',
-              style: TextStyle(fontSize: 14),
-            ),
-            SizedBox(height: 4),
-            Text(
-              'Volume: ${widget.stock['volume']}',
-              style: TextStyle(fontSize: 14),
-            ),
+                    : Colors.red),
+            _buildStockInfo("Open", widget.stock['openPrice']),
+            _buildStockInfo("Close", widget.stock['closePrice']),
+            _buildStockInfo("High", widget.stock['highPrice']),
+            _buildStockInfo("Low", widget.stock['lowPrice']),
+            _buildStockInfo("Volume", widget.stock['volume']),
+
             SizedBox(height: 16),
 
             // Chart Section
@@ -99,55 +69,72 @@ class _StockDetailsScreenState extends State<StockDetailsScreen> {
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
             SizedBox(height: 8),
-            SizedBox(
-              height: 200, // Compact height for the chart
-              child: isLoading
-                  ? Center(child: CircularProgressIndicator())
-                  : LineChart(
-                LineChartData(
-                  gridData: FlGridData(show: true),
-                  titlesData: FlTitlesData(
-                    leftTitles: AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: true,
-                        reservedSize: 40,
-                        getTitlesWidget: (value, meta) {
-                          return Text(
-                            value.toStringAsFixed(0),
-                            style: TextStyle(fontSize: 10),
-                          );
-                        },
-                      ),
-                    ),
-                    bottomTitles: AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: true,
-                        reservedSize: 30,
-                        getTitlesWidget: (value, meta) {
-                          return Text(
-                            value.toInt().toString(),
-                            style: TextStyle(fontSize: 10),
-                          );
-                        },
-                      ),
-                    ),
+        Container(
+          height: 200,
+          padding: EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.grey.shade300),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: isLoading
+              ? Center(child: CircularProgressIndicator())
+              : chartData.isEmpty
+              ? Center(child: Text("No chart data available"))
+              : LineChart(
+            LineChartData(
+              gridData: FlGridData(show: true),
+              titlesData: FlTitlesData(
+                leftTitles: AxisTitles(
+                  sideTitles: SideTitles(
+                    showTitles: true,
+                    reservedSize: 40,
+                    getTitlesWidget: (value, meta) {
+                      return Text(
+                        value.toStringAsFixed(0),
+                        style: TextStyle(fontSize: 10),
+                      );
+                    },
                   ),
-                  borderData: FlBorderData(show: true),
-                  lineBarsData: [
-                    LineChartBarData(
-                      spots: chartData,
-                      isCurved: true,
-                      color: Colors.blue,
-                      barWidth: 2,
-                      isStrokeCapRound: true,
-                      dotData: FlDotData(show: false),
-                    ),
-                  ],
+                ),
+                bottomTitles: AxisTitles(
+                  sideTitles: SideTitles(
+                    showTitles: true,
+                    reservedSize: 30,
+                    getTitlesWidget: (value, meta) {
+                      return Text(
+                        value.toInt().toString(),
+                        style: TextStyle(fontSize: 10),
+                      );
+                    },
+                  ),
                 ),
               ),
+              borderData: FlBorderData(show: true),
+              lineBarsData: [
+                LineChartBarData(
+                  spots: chartData,
+                  isCurved: true,
+                  color: Colors.blue,
+                  barWidth: 2,
+                  isStrokeCapRound: true,
+                  dotData: FlDotData(show: false),
+                ),
+              ],
             ),
+          ),
+        ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildStockInfo(String title, String? value, {Color color = Colors.black}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Text(
+        "$title: ${value ?? 'N/A'}",
+        style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: color),
       ),
     );
   }

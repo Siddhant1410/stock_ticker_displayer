@@ -2,58 +2,31 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class StockService {
-  final String yahooFinanceUrl = 'https://query1.finance.yahoo.com/v8/finance/chart/';
+  final String dhanApiUrl = 'https://api.dhan.co/market/quote/';
+  final String accessToken = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJpc3MiOiJkaGFuIiwicGFydG5lcklkIjoiIiwiZXhwIjoxNzQyNDQ5MjcwLCJ0b2tlbkNvbnN1bWVyVHlwZSI6IlNFTEYiLCJ3ZWJob29rVXJsIjoiIiwiZGhhbkNsaWVudElkIjoiMTEwNjM0NzAwNSJ9.DGneSi3Q3eP_c_50D9zB6HNhEppZKoRMTS1MOzDpkEJCbifK0dWEekoo0-_1Klh-gWfy3wBRRGOSH21rxHX3Dg"; // Replace with actual Dhan API key
 
-  // Fetch stock data by ticker
+  // Fetch stock data by ticker from Dhan API
   Future<Map<String, dynamic>> fetchStockData(String ticker) async {
-    final String baseUrl = 'https://query1.finance.yahoo.com/v8/finance/chart/';
-    final Uri url = Uri.parse('$baseUrl$ticker?interval=1d&range=1d');
+    final Uri url = Uri.parse('$dhanApiUrl$ticker');
 
     try {
-      final response = await http.get(url);
+      final response = await http.get(url, headers: {
+        "Content-Type": "application/json",
+        "access-token": accessToken, // Dhan requires only access-token
+      });
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
 
-        // Navigate through JSON to extract relevant fields
-        final result = data['chart']['result'][0];
-        final meta = result['meta'];
-        final quote = result['indicators']['quote'][0];
-
-        final double regularMarketPrice = meta['regularMarketPrice'] ?? 0.0;
-        final double? openPrice = (quote['open'] != null && quote['open'].isNotEmpty)
-            ? quote['open'][0]
-            : null;
-        final double? closePrice = (quote['close'] != null && quote['close'].isNotEmpty)
-            ? quote['close'][0]
-            : null;
-        final double? highPrice = (quote['high'] != null && quote['high'].isNotEmpty)
-            ? quote['high'][0]
-            : null;
-        final double? lowPrice = (quote['low'] != null && quote['low'].isNotEmpty)
-            ? quote['low'][0]
-            : null;
-        final double? volume = (quote['volume'] != null && quote['volume'].isNotEmpty)
-            ? quote['volume'][0]
-            : null;
-
-        // Calculate price difference if both open and close are available
-        final String? priceDifference = (openPrice != null && closePrice != null)
-            ? (closePrice - openPrice).toStringAsFixed(2)
-            : null;
-        final String? priceChange = (priceDifference != null && closePrice! > openPrice!)
-            ? '+$priceDifference'
-            : priceDifference;
-
         return {
           'ticker': ticker,
-          'latestPrice': regularMarketPrice.toStringAsFixed(2),
-          'priceDifference': priceChange,
-          'openPrice': openPrice?.toStringAsFixed(2) ?? 'N/A',
-          'closePrice': closePrice?.toStringAsFixed(2) ?? 'N/A',
-          'highPrice': highPrice?.toStringAsFixed(2) ?? 'N/A',
-          'lowPrice': lowPrice?.toStringAsFixed(2) ?? 'N/A',
-          'volume': volume?.toStringAsFixed(0) ?? 'N/A',
+          'latestPrice': data['lastTradedPrice']?.toString() ?? 'N/A',
+          'priceDifference': data['change']?.toString() ?? 'N/A',
+          'openPrice': data['dayHigh']?.toString() ?? 'N/A',
+          'closePrice': data['dayLow']?.toString() ?? 'N/A',
+          'highPrice': data['dayHigh']?.toString() ?? 'N/A',
+          'lowPrice': data['dayLow']?.toString() ?? 'N/A',
+          'volume': data['totalTradedVolume']?.toString() ?? 'N/A',
         };
       } else {
         throw Exception('Failed to fetch stock data: ${response.statusCode}');
@@ -86,7 +59,6 @@ class StockService {
 
       if (response.statusCode == 200) {
         print('Data sent successfully to ESP');
-        // Provide user feedback
       } else {
         print('Failed to send data: ${response.statusCode}');
       }
@@ -95,49 +67,72 @@ class StockService {
     }
   }
 
+  // Fetch historical data for charts
   Future<List<double>> fetchHistoricalData(String ticker) async {
-    final Uri url = Uri.parse(
-        'https://query1.finance.yahoo.com/v8/finance/chart/$ticker?interval=1d&range=1mo');
+    final Uri url = Uri.parse("https://api.dhan.co/charts/historical");
+
+    final Map<String, dynamic> requestBody = {
+      "securityId": ticker, // Stock Symbol
+      "exchangeSegment": "BSE_CURRENCY", // Change to BSE if needed
+      "instrument": "EQUITY",
+      "startTime": DateTime.now().subtract(Duration(days: 30)).toIso8601String(),
+      "endTime": DateTime.now().toIso8601String()
+    };
 
     try {
-      final response = await http.get(url);
+      final response = await http.post(
+        url,
+        headers: {
+          "Content-Type": "application/json",
+          "access-token": accessToken,
+        },
+        body: jsonEncode(requestBody),
+      );
+
+      print("Dhan Historical Data Response: ${response.body}");
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        final result = data['chart']['result'][0];
-        final quotes = result['indicators']['quote'][0];
+        final List<dynamic>? candles = data['data']?['candles']; // Extract candle data
 
-        final List<dynamic> closes = quotes['close'];
-        return closes
-            .map<double>((e) => e != null ? e.toDouble() : 0.0)
-            .toList(); // Explicitly cast to List<double>
+        if (candles == null || candles.isEmpty) {
+          print("No historical data available for $ticker.");
+          return [];
+        }
+
+        return candles.map<double>((candle) => (candle[4] as num).toDouble()).toList(); // Close prices
       } else {
-        throw Exception('Failed to fetch historical data');
+        print("Failed to fetch historical data: ${response.statusCode}");
+        return [];
       }
     } catch (e) {
-      print('Error fetching historical data: $e');
+      print("Error fetching historical data: $e");
       return [];
     }
   }
 
-  // Fetch stock suggestions by query
-  Future<List<Map<String, String>>> fetchStockSuggestions(String query) async {
-    final Uri url = Uri.parse('https://query2.finance.yahoo.com/v1/finance/search?q=$query');
+
+
+  // Fetch stock suggestions by name
+  Future<List<Map<String, String>>?> fetchStockSuggestions(String query) async {
+    final Uri url = Uri.parse('https://api.dhan.co/search/stocks?q=$query');
 
     try {
-      final response = await http.get(url);
+      final response = await http.get(url, headers: {
+        "Content-Type": "application/json",
+        "access-token": accessToken,
+      });
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        final suggestions = data['quotes'] as List;
+        final suggestions = data['stocks'] as List;
 
         return suggestions.map((stock) {
           return {
-            'name': (stock['shortname'] ?? stock['symbol']).toString(),
-            'ticker': stock['symbol'].toString(),
+            'name': (stock['companyName'] ?? stock['symbol'] ?? 'Unknown').toString(),
+            'ticker': (stock['symbol'] ?? 'Unknown').toString(),
           };
         }).toList();
-
       } else {
         throw Exception('Failed to fetch stock suggestions: ${response.statusCode}');
       }
@@ -146,4 +141,5 @@ class StockService {
       return [];
     }
   }
+
 }
