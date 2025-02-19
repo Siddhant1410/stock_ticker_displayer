@@ -1,0 +1,27 @@
+name: stock_ticker_displayer
+description: A Flutter app to display stock ticker data and send it to an ESP.
+
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  #shared_preferences: ^2.3.3
+  firebase_core: ^3.8.1
+  firebase_auth: ^5.3.4
+  cloud_firestore: ^5.5.1
+  fl_chart: ^0.70.2
+
+  http: ^1.2.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+flutter:
+  uses-material-design: true
+
+

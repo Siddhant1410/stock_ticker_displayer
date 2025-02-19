@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "681833557981",
+    "project_id": "stock-ticker-displayer",
+    "storage_bucket": "stock-ticker-displayer.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:681833557981:android:47fe56ba19c4f3a81a5034",
+        "android_client_info": {
+          "package_name": "com.example.stock_ticker_displayer"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCqE8J7oua0mlOfHkziZCa9GB2rwAenXXk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
