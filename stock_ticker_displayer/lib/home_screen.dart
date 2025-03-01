@@ -195,7 +195,7 @@ class _HomeScreenState extends State<HomeScreen> {
             onPressed: () => logout(context),
           ),
           IconButton(
-          icon: Icon(Icons.list), // Order Book Icon
+          icon: Icon(Icons.history), // Order Book Icon
           tooltip: "View Order Book",
           onPressed: () {
             Navigator.push(

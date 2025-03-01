@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 
 class DhanService {
   final String baseUrl = "https://api.dhan.co";
-  final String accessToken = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJpc3MiOiJkaGFuIiwicGFydG5lcklkIjoiIiwiZXhwIjoxNzQyNDQ5MjcwLCJ0b2tlbkNvbnN1bWVyVHlwZSI6IlNFTEYiLCJ3ZWJob29rVXJsIjoiIiwiZGhhbkNsaWVudElkIjoiMTEwNjM0NzAwNSJ9.DGneSi3Q3eP_c_50D9zB6HNhEppZKoRMTS1MOzDpkEJCbifK0dWEekoo0-_1Klh-gWfy3wBRRGOSH21rxHX3Dg"; // Replace with actual token
+  final String accessToken = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJpc3MiOiJkaGFuIiwicGFydG5lcklkIjoiIiwiZXhwIjoxNzQwOTI4OTk1LCJ0b2tlbkNvbnN1bWVyVHlwZSI6IlNFTEYiLCJ3ZWJob29rVXJsIjoiIiwiZGhhbkNsaWVudElkIjoiMTEwMjY0MjU0OCJ9.KJ_K_ppDInqYP8OWI1SmU0hItrxD8_zU6wdvyI0iGwSd6S-e7t3INf6qyU9N5G8SrDKvN5QSKq-ZSS4APBkmxw"; // Replace with actual token
 
   Future<Map<String, dynamic>> getStockData(String ticker) async {
     final Uri url = Uri.parse("$baseUrl/market/quote/$ticker");
@@ -28,25 +28,46 @@ class DhanService {
     }
   }
 
-  Future<List<dynamic>> getOrderBook() async {
-    final String baseUrl = "https://api.dhan.co/v2/orders";
-    final Uri url = Uri.parse(baseUrl);
+  Future<List<Map<String, dynamic>>> getOrderBook() async {
+    final Uri url = Uri.parse("https://api.dhan.co/tradeHistory/2023-01-01/2025-03-01/1");
 
     try {
-      final response = await http.get(url, headers: {
-        "Content-Type": "application/json",
-        "access-token": accessToken
-      });
+      final response = await http.get(
+        url,
+        headers: {
+          "accept": "application/json",
+          "access-token": accessToken, // Ensure this token is valid
+        },
+      );
+
+      print("API Response Code: ${response.statusCode}");
+      print("API Response Body: ${response.body}");
 
       if (response.statusCode == 200) {
-        return json.decode(response.body)['orders'];
+        final dynamic data = jsonDecode(response.body); // Allow any type
+
+        if (data is List) {
+          // API returns a list at root level
+          return List<Map<String, dynamic>>.from(data); // Directly return it
+        } else if (data is Map<String, dynamic> && data.containsKey('data')) {
+          // Handle cases where data might be inside another object
+          return List<Map<String, dynamic>>.from(data['data']);
+        } else {
+          print("Unexpected response format: $data");
+          return [];
+        }
       } else {
-        throw Exception("Failed to fetch order book");
+        print("Failed to fetch order book: ${response.body}");
+        return [];
       }
     } catch (e) {
-      print("Error: $e");
+      print("Error fetching order book: $e");
       return [];
     }
   }
+
+
+
+
 
 }

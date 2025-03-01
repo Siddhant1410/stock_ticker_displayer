@@ -11,6 +11,8 @@ class _OrderBookScreenState extends State<OrderBookScreen> {
   List<dynamic> orders = [];
   bool isLoading = true;
 
+  String get accessToken => _dhanService.accessToken;
+
   @override
   void initState() {
     super.initState();
@@ -20,7 +22,7 @@ class _OrderBookScreenState extends State<OrderBookScreen> {
 
   Future<void> fetchOrders() async {
     try {
-      final data = await _dhanService.getOrderBook();
+      List<Map<String, dynamic>> data = await _dhanService.getOrderBook();
       setState(() {
         orders = data;
         isLoading = false;
@@ -33,10 +35,36 @@ class _OrderBookScreenState extends State<OrderBookScreen> {
     }
   }
 
+  Future<void> fetchPastTrades() async {
+    setState(() => isLoading = true);
+
+    try {
+      List<Map<String, dynamic>> pastTrades = await _dhanService.getOrderBook();  // ✅ Call function here
+
+      // setState(() {
+      //   orderBook = pastTrades;
+      // });
+
+      if (pastTrades.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("⚠️ No past trades found!")),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("🚨 Error fetching past trades: $e")),
+      );
+    } finally {
+      setState(() => isLoading = false);
+    }
+  }
+
+
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("Order Book")),
+      appBar: AppBar(title: Text("Past Trades")),
       body: isLoading
           ? Center(child: CircularProgressIndicator())
           : orders.isEmpty
@@ -53,25 +81,21 @@ class _OrderBookScreenState extends State<OrderBookScreen> {
             ),
             child: ListTile(
               title: Text(
-                "Symbol: ${order['securityId'] ?? 'N/A'}",
+                "Symbol: ${order['customSymbol'] ?? 'N/A'}",
                 style: TextStyle(fontWeight: FontWeight.bold),
               ),
               subtitle: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text("Quantity: ${order['quantity'] ?? 'N/A'}"),
-                  Text("Price: ₹${order['averagePrice'] ?? 'N/A'}"),
-                  Text(
-                    "Status: ${order['orderStatus'] ?? 'N/A'}",
-                    style: TextStyle(
-                      color: order['orderStatus'] == 'COMPLETE'
-                          ? Colors.green
-                          : Colors.red,
-                    ),
-                  ),
+                  Text("Quantity: ${order['tradedQuantity'] ?? 'N/A'}"),
+                  Text("Price: ₹${order['tradedPrice'] ?? 'N/A'}"),
+                  Text("Trade ID: ${order['orderId'] ?? 'N/A'}"),
+                  Text("Date: ${order['exchangeTime'] ?? 'N/A'}"),
+                  Text("Type: ${order['orderType'] ?? 'N/A'}"),
+                  Text("Transaction Type: ${order['transactionType'] ?? 'N/A'}"),
                 ],
               ),
-              trailing: Icon(Icons.arrow_forward_ios, size: 16),
+              // trailing: Icon(Icons.arrow_forward_ios, size: 16),
             ),
           );
         },
