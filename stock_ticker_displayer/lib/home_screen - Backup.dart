@@ -5,6 +5,8 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'stock_service.dart';
 import 'stock_details_screen.dart';
+import 'order_book_screen.dart';
+import 'package:intl/intl.dart';
 
 class HomeScreen extends StatefulWidget {
   @override
@@ -25,6 +27,31 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _loadWatchlist();
+  }
+
+  Future<void> _selectDateRange(BuildContext context) async {
+    DateTimeRange? picked = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(2000), // Set a reasonable range
+      lastDate: DateTime.now(),
+      initialDateRange: DateTimeRange(
+        start: DateTime.now().subtract(Duration(days: 7)), // Default: last 7 days
+        end: DateTime.now(),
+      ),
+    );
+
+    if (picked != null) {
+      String fromDate = DateFormat('yyyy-MM-dd').format(picked.start);
+      String toDate = DateFormat('yyyy-MM-dd').format(picked.end);
+
+      // Navigate to Order Book Screen with selected date range
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => OrderBookScreen(fromDate: fromDate, toDate: toDate),
+        ),
+      );
+    }
   }
 
   Future<void> _loadWatchlist() async {
@@ -193,8 +220,15 @@ class _HomeScreenState extends State<HomeScreen> {
             icon: Icon(Icons.logout),
             onPressed: () => logout(context),
           ),
+          IconButton(
+            icon: Icon(Icons.history), // Order Book Icon
+            tooltip: "View Order Book",
+            onPressed: () => _selectDateRange(context), // Call the function separately
+          ),
+
         ],
       ),
+
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(

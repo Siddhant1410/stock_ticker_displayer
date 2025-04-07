@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:fl_chart/fl_chart.dart';
 import 'stock_service.dart';
 
 class StockDetailsScreen extends StatefulWidget {
@@ -13,128 +12,170 @@ class StockDetailsScreen extends StatefulWidget {
 
 class _StockDetailsScreenState extends State<StockDetailsScreen> {
   final StockService _stockService = StockService();
-  List<FlSpot> chartData = [];
-  bool isLoading = true;
-
-  @override
-  void initState() {
-    super.initState();
-    fetchChartData(widget.stock['ticker']);
-  }
-
-  Future<void> fetchChartData(String ticker) async {
-    try {
-      final historicalData = await _stockService.fetchHistoricalData(ticker);
-
-      setState(() {
-        chartData = historicalData
-            .asMap()
-            .entries
-            .map((entry) => FlSpot(entry.key.toDouble(), entry.value))
-            .toList();
-        isLoading = false;
-      });
-    } catch (e) {
-      print('Error fetching chart data: $e');
-      setState(() => isLoading = false);
-    }
-  }
+  final Color darkBlue = const Color(0xFF091525);
+  final Color lightBlue = const Color(0xFF1E3A8A);
 
   @override
   Widget build(BuildContext context) {
+    final bool isPositive = widget.stock['priceDifference']?.startsWith('+') ?? false;
+
     return Scaffold(
-      appBar: AppBar(title: Text(widget.stock['ticker'] ?? 'Stock Details')),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Stock Information
-            _buildStockInfo("Latest Price", widget.stock['latestPrice']),
-            _buildStockInfo("Price Change", widget.stock['priceDifference'],
-                color: widget.stock['priceDifference'].startsWith('+')
-                    ? Colors.green
-                    : Colors.red),
-            _buildStockInfo("Open", widget.stock['openPrice']),
-            _buildStockInfo("Close", widget.stock['closePrice']),
-            _buildStockInfo("High", widget.stock['highPrice']),
-            _buildStockInfo("Low", widget.stock['lowPrice']),
-            _buildStockInfo("Volume", widget.stock['volume']),
-
-            SizedBox(height: 16),
-
-            // Chart Section
-            Text(
-              'Stock Performance (1 Month)',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-            SizedBox(height: 8),
-        Container(
-          height: 200,
-          padding: EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            border: Border.all(color: Colors.grey.shade300),
-            borderRadius: BorderRadius.circular(8),
+      appBar: AppBar(
+        title: Text(
+          widget.stock['ticker'] ?? 'Stock Details',
+          style: TextStyle(color: Colors.white),
+        ),
+        backgroundColor: darkBlue,
+        iconTheme: IconThemeData(color: Colors.white),
+        elevation: 0,
+      ),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [darkBlue, lightBlue],
           ),
-          child: isLoading
-              ? Center(child: CircularProgressIndicator())
-              : chartData.isEmpty
-              ? Center(child: Text("No chart data available"))
-              : LineChart(
-            LineChartData(
-              gridData: FlGridData(show: true),
-              titlesData: FlTitlesData(
-                leftTitles: AxisTitles(
-                  sideTitles: SideTitles(
-                    showTitles: true,
-                    reservedSize: 40,
-                    getTitlesWidget: (value, meta) {
-                      return Text(
-                        value.toStringAsFixed(0),
-                        style: TextStyle(fontSize: 10),
-                      );
-                    },
+        ),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(20.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Stock Header Card
+              // Replace your current header Card with this:
+              SizedBox(
+                width: MediaQuery.of(context).size.width * 0.9, // Adjust this value
+                child: Card(
+                  elevation: 4,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                ),
-                bottomTitles: AxisTitles(
-                  sideTitles: SideTitles(
-                    showTitles: true,
-                    reservedSize: 30,
-                    getTitlesWidget: (value, meta) {
-                      return Text(
-                        value.toInt().toString(),
-                        style: TextStyle(fontSize: 10),
-                      );
-                    },
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      children: [
+                        Text(
+                          widget.stock['name'] ?? widget.stock['ticker'] ?? 'N/A',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: darkBlue,
+                          ),
+                        ),
+                        SizedBox(height: 8),
+                        Text(
+                          '\$${widget.stock['latestPrice'] ?? 'N/A'}',
+                          style: TextStyle(
+                            fontSize: 28,
+                            fontWeight: FontWeight.bold,
+                            color: darkBlue,
+                          ),
+                        ),
+                        SizedBox(height: 4),
+                        Text(
+                          widget.stock['priceDifference'] ?? '',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: isPositive ? Colors.green : Colors.red,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
-              borderData: FlBorderData(show: true),
-              lineBarsData: [
-                LineChartBarData(
-                  spots: chartData,
-                  isCurved: true,
-                  color: Colors.blue,
-                  barWidth: 2,
-                  isStrokeCapRound: true,
-                  dotData: FlDotData(show: false),
+              SizedBox(height: 50),
+              // Stock Details Section
+              Text(
+                'Stock Details',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
                 ),
-              ],
-            ),
+              ),
+              SizedBox(height: 12),
+              _buildDetailCard(
+                children: [
+                  _buildDetailRow("Open Price", widget.stock['openPrice']),
+                  _buildDetailRow("Close Price", widget.stock['closePrice']),
+                  _buildDetailRow("High Price", widget.stock['highPrice']),
+                  _buildDetailRow("Low Price", widget.stock['lowPrice']),
+                  _buildDetailRow("Volume", widget.stock['volume']),
+                ],
+              ),
+              SizedBox(height: 50),
+
+              // Action Buttons
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  ElevatedButton.icon(
+                    icon: Icon(Icons.send, color: Colors.white),
+                    label: Text('Send to ESP', style: TextStyle(color: Colors.white)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                      padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    onPressed: () => _stockService.sendStockDataToESP(
+                      widget.stock['ticker'],
+                      widget.stock['latestPrice'],
+                      widget.stock['priceDifference'],
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: 250),
+            ],
           ),
-        ),
-          ],
         ),
       ),
     );
   }
 
-  Widget _buildStockInfo(String title, String? value, {Color color = Colors.black}) {
+  Widget _buildDetailCard({required List<Widget> children}) {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: children,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDetailRow(String label, String? value) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Text(
-        "$title: ${value ?? 'N/A'}",
-        style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: color),
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: Colors.grey[700],
+            ),
+          ),
+          Text(
+            value ?? 'N/A',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: darkBlue,
+            ),
+          ),
+        ],
       ),
     );
   }

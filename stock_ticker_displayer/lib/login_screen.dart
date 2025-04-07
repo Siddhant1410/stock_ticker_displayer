@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'register_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   @override
@@ -13,7 +14,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
   bool _isLoading = false;
 
-  // Method to handle login
   Future<void> login() async {
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
@@ -32,7 +32,6 @@ class _LoginScreenState extends State<LoginScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Login successful!")),
       );
-      // Navigate to home screen (adjust as needed)
       Navigator.pushReplacementNamed(context, '/home');
     } on FirebaseAuthException catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -46,45 +45,98 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("Login")),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            TextField(
-              controller: _emailController,
-              decoration: InputDecoration(
-                labelText: "Email",
-                border: OutlineInputBorder(),
+      backgroundColor: Color(0xFF0D1B2A), // Deep navy blue
+      body: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                'TickX',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 60,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-            ),
-            SizedBox(height: 16),
-            TextField(
-              controller: _passwordController,
-              decoration: InputDecoration(
-                labelText: "Password",
-                border: OutlineInputBorder(),
+              SizedBox(height: 16),
+              Text(
+                'Log In',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 40,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
-              obscureText: true,
-            ),
-            SizedBox(height: 24),
-            _isLoading
-                ? Center(child: CircularProgressIndicator())
-                : ElevatedButton(
-              onPressed: login,
-              child: Text("Login"),
-            ),
-            SizedBox(height: 16),
-            TextButton(
-              onPressed: () {
-                // Navigate to registration screen
-                Navigator.pushNamed(context, '/register');
-              },
-              child: Text("Don't have an account? Register"),
-            ),
-          ],
+              SizedBox(height: 32),
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Column(
+                  children: [
+                    TextField(
+                      controller: _emailController,
+                      decoration: InputDecoration(
+                        hintText: "Email",
+                        border: UnderlineInputBorder(),
+                      ),
+                    ),
+                    SizedBox(height: 16),
+                    TextField(
+                      controller: _passwordController,
+                      obscureText: true,
+                      decoration: InputDecoration(
+                        hintText: "Password",
+                        border: UnderlineInputBorder(),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(height: 32),
+              _isLoading
+                  ? CircularProgressIndicator()
+                  : ElevatedButton(
+                onPressed: login,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Color(0xFF2563EB), // Blue
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  padding: EdgeInsets.symmetric(horizontal: 60, vertical: 16),
+                ),
+                child: Text(
+                  "Log In",
+                  style: TextStyle(fontSize: 16, color: Colors.white,),
+                ),
+              ),
+              SizedBox(height: 24),
+              GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => RegisterScreen()),
+                  );
+                },
+                child: RichText(
+                  text: TextSpan(
+                  text: "Don't have an account? ",
+                  style: TextStyle(color: Colors.white),
+                  children: [
+                  TextSpan(
+                  text: "Sign Up",
+                  style: TextStyle(color: Color(0xFF60A5FA), fontWeight: FontWeight.bold),
+                ),
+                  ],
+                ),
+              ),
+              ),
+            ],
+          ),
         ),
       ),
     );

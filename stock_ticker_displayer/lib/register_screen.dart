@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 
 class RegisterScreen extends StatefulWidget {
   @override
@@ -7,74 +6,129 @@ class RegisterScreen extends StatefulWidget {
 }
 
 class _RegisterScreenState extends State<RegisterScreen> {
-  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final TextEditingController _nameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-
-  bool _isLoading = false;
-
-  Future<void> register() async {
-    final email = _emailController.text.trim();
-    final password = _passwordController.text.trim();
-
-    if (email.isEmpty || password.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Please fill in all fields")),
-      );
-      return;
-    }
-
-    setState(() => _isLoading = true);
-
-    try {
-      await _auth.createUserWithEmailAndPassword(email: email, password: password);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Registration successful!")),
-      );
-      Navigator.pop(context); // Return to login screen
-    } on FirebaseAuthException catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.message ?? "Registration failed")),
-      );
-    } finally {
-      setState(() => _isLoading = false);
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("Register")),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            TextField(
-              controller: _emailController,
-              decoration: InputDecoration(
-                labelText: "Email",
-                border: OutlineInputBorder(),
+      backgroundColor: Color(0xFF0F172A),
+      body: Center(
+        child: SingleChildScrollView(
+          padding: EdgeInsets.symmetric(horizontal: 32),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                'TickX',
+                style: TextStyle(
+                  fontSize: 60,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
               ),
-            ),
-            SizedBox(height: 16),
-            TextField(
-              controller: _passwordController,
-              decoration: InputDecoration(
-                labelText: "Password",
-                border: OutlineInputBorder(),
+              SizedBox(height: 20),
+              Text(
+                'Sign Up',
+                style: TextStyle(
+                  fontSize: 40,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
               ),
-              obscureText: true,
-            ),
-            SizedBox(height: 24),
-            _isLoading
-                ? Center(child: CircularProgressIndicator())
-                : ElevatedButton(
-              onPressed: register,
-              child: Text("Register"),
-            ),
-          ],
+              SizedBox(height: 30),
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+                child: Column(
+                  children: [
+                    TextField(
+                      controller: _nameController,
+                        decoration: InputDecoration(
+                          hintText: 'Name',
+                          border: UnderlineInputBorder(
+                            borderSide: BorderSide.none, // hides initial underline
+                          ),
+                          focusedBorder: UnderlineInputBorder(
+                            borderSide: BorderSide(color: Colors.black), // show when focused
+                          ),
+                        ),
+                    ),
+                    //Divider(height: 1, color: Colors.grey.shade300),
+                    TextField(
+                      controller: _emailController,
+                      decoration: InputDecoration(
+                        hintText: 'E-mail',
+                        border: UnderlineInputBorder(
+                          borderSide: BorderSide.none, // hides initial underline
+                        ),
+                        focusedBorder: UnderlineInputBorder(
+                          borderSide: BorderSide(color: Colors.black), // show when focused
+                        ),
+                      ),
+                    ),
+                    // Divider(height: 1, color: Colors.grey.shade300),
+                    TextField(
+                      controller: _passwordController,
+                      obscureText: true,
+                      decoration: InputDecoration(
+                        hintText: 'Password',
+                        border: UnderlineInputBorder(
+                          borderSide: BorderSide.none, // hides initial underline
+                        ),
+                        focusedBorder: UnderlineInputBorder(
+                          borderSide: BorderSide(color: Colors.black), // show when focused
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(height: 24),
+              ElevatedButton(
+                onPressed: () {
+                  // TODO: Handle sign up logic
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Color(0xFF2563EB),
+                  padding: EdgeInsets.symmetric(horizontal: 80, vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: Text(
+                  'Sign Up',
+                  style: TextStyle(color: Colors.white, fontSize: 16),
+                ),
+              ),
+              SizedBox(height: 20),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    'Already have an account? ',
+                    style: TextStyle(color: Colors.white70),
+                  ),
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.pop(context);
+                    },
+                    child: Text(
+                      'Log In',
+                      style: TextStyle(
+                        color: Colors.blueAccent,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  )
+                ],
+              )
+            ],
+          ),
         ),
       ),
     );

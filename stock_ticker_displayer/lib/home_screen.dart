@@ -6,6 +6,8 @@ import 'dart:convert';
 import 'stock_service.dart';
 import 'stock_details_screen.dart';
 import 'order_book_screen.dart';
+import 'package:intl/intl.dart';
+const Color darkBlue = Color(0xFF091525);
 
 class HomeScreen extends StatefulWidget {
   @override
@@ -21,11 +23,36 @@ class _HomeScreenState extends State<HomeScreen> {
   List<Map<String, dynamic>> watchlist = [];
   List<dynamic> searchResults = [];
   bool _isLoading = false;
+  bool _showSearchField = false;
 
   @override
   void initState() {
     super.initState();
     _loadWatchlist();
+  }
+
+  Future<void> _selectDateRange(BuildContext context) async {
+    DateTimeRange? picked = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(2000),
+      lastDate: DateTime.now(),
+      initialDateRange: DateTimeRange(
+        start: DateTime.now().subtract(Duration(days: 7)),
+        end: DateTime.now(),
+      ),
+    );
+
+    if (picked != null) {
+      String fromDate = DateFormat('yyyy-MM-dd').format(picked.start);
+      String toDate = DateFormat('yyyy-MM-dd').format(picked.end);
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => OrderBookScreen(fromDate: fromDate, toDate: toDate),
+        ),
+      );
+    }
   }
 
   Future<void> _loadWatchlist() async {
@@ -100,7 +127,6 @@ class _HomeScreenState extends State<HomeScreen> {
             ? (quote['close'][0]?.toDouble())
             : null;
 
-        // Calculate price difference/change
         final String priceDifference = (closePrice! - openPrice).toStringAsFixed(2);
         final String priceChange = closePrice > openPrice ? '+$priceDifference' : priceDifference;
 
@@ -128,6 +154,7 @@ class _HomeScreenState extends State<HomeScreen> {
         setState(() {
           watchlist.add(stock);
           _tickerController.clear();
+          _showSearchField = false;
         });
 
         _saveWatchlist();
@@ -156,12 +183,6 @@ class _HomeScreenState extends State<HomeScreen> {
     _saveWatchlist();
   }
 
-  void sendDataToESP(Map<String, dynamic> stock) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text("Data sent to ESP: ${stock['ticker']}")),
-    );
-  }
-
   Future<void> sendStockData(Map<String, dynamic> stock) async {
     try {
       await _stockService.sendStockDataToESP(
@@ -184,106 +205,206 @@ class _HomeScreenState extends State<HomeScreen> {
     Navigator.pushReplacementNamed(context, '/login');
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text("Home"),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.logout),
-            onPressed: () => logout(context),
-          ),
-          IconButton(
-          icon: Icon(Icons.history), // Order Book Icon
-          tooltip: "View Order Book",
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => OrderBookScreen()),
-            );
-          })
-        ],
-      ),
+  Widget _buildIndexCard() {
+    if (watchlist.length < 2) return SizedBox.shrink();
 
-      body: Padding(
+    final firstStock = watchlist[0] ;
+    final secondStock = watchlist[1] ;
+
+    // Parse the price difference to determine color (green for positive, red for negative)
+    final firstPriceDiff = firstStock['priceDifference'] ?? '0';
+    final secondPriceDiff = secondStock['priceDifference'] ?? '0';
+
+    final firstIsPositive = firstPriceDiff.startsWith('+');
+    final secondIsPositive = secondPriceDiff.startsWith('+');
+
+    return Card(
+      margin: EdgeInsets.only(bottom: 16),
+      elevation: 4,
+      child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            TextField(
-              controller: _tickerController,
-              decoration: InputDecoration(
-                labelText: "Enter Stock Name or Ticker",
-                border: OutlineInputBorder(),
+            SizedBox(height: 8),
+            Text(
+              firstStock['ticker'] + "                                            " + secondStock ['ticker'] ?? 'N/A',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
               ),
-              onChanged: (value) => searchStocksByName(value), // Trigger search as user types
             ),
-            if (searchResults.isNotEmpty)
-              Container(
-                constraints: BoxConstraints(maxHeight: 200),
-                child: ListView.builder(
-                  shrinkWrap: true,
-                  itemCount: searchResults.length,
-                  itemBuilder: (context, index) {
-                    final stock = searchResults[index];
-                    return ListTile(
-                      title: Text(stock['shortname'] ?? stock['symbol']),
-                      subtitle: Text(stock['symbol']),
-                      onTap: () {
-                        fetchStockData(stock['symbol']);
-                        setState(() => searchResults = []);
-                      },
-                    );
-                  },
-                ),
+
+            SizedBox(height: 8),
+            Text(
+              firstStock['latestPrice'] + "                       " +secondStock['latestPrice']  ?? 'N/A',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
               ),
-            SizedBox(height: 16),
-            _isLoading
-                ? Center(child: CircularProgressIndicator())
-                : ElevatedButton(
-              onPressed: () => fetchStockData(_tickerController.text.trim()),
-              child: Text("Fetch Stock Data"),
+            ),
+            SizedBox(height: 8),
+            Text(
+              firstStock['priceDifference'] + "                                          " +secondStock['priceDifference'] ?? 'N/A',
+              style: TextStyle(
+                fontSize: 16,
+                color: firstIsPositive ? Colors.green : Colors.red,
+                fontWeight: FontWeight.bold,
+              ),
             ),
             SizedBox(height: 16),
-            Expanded(
-              child: ListView.builder(
-                itemCount: watchlist.length,
-                itemBuilder: (context, index) {
-                  final stock = watchlist[index];
-                  return Card(
-                    child: ListTile(
-                      title: Text("${stock['ticker']}"),
-                      subtitle: Text("Price: ${stock['latestPrice'] ?? 'N/A'}"),
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          IconButton(
-                            icon: Icon(Icons.send),
-                            onPressed: () => sendStockData(stock),
-                          ),
-                          IconButton(
-                            icon: Icon(Icons.delete),
-                            onPressed: () => deleteStock(index),
-                          ),
-                        ],
-                      ),
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) =>
-                                StockDetailsScreen(stock: stock),
-                          ),
-                        );
-                      },
-                    ),
-                  );
-                },
-              ),
-            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween),
           ],
         ),
       ),
     );
   }
-}
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text("TickX", style: TextStyle(color: Colors.white)),
+        backgroundColor: darkBlue,
+        actions: [
+          IconButton(
+            icon: Icon(Icons.search, color: Colors.white),
+            onPressed: () {
+              setState(() {
+                _showSearchField = !_showSearchField;
+                if (!_showSearchField) {
+                  searchResults = [];
+                  _tickerController.clear();
+                }
+              });
+            },
+          ),
+          IconButton(
+            icon: Icon(Icons.history, color: Colors.white),
+            tooltip: "View Order Book",
+            onPressed: () => _selectDateRange(context),
+          ),
+          IconButton(
+            icon: Icon(Icons.logout, color: Colors.white),
+            onPressed: () => logout(context),
+          ),
+        ],
+      ),
+      body: Column(
+        children: [
+          // Top 30% colored section - always maintains height
+          Container(
+            height: MediaQuery
+                .of(context)
+                .size
+                .height * 0.25,
+            color: darkBlue,
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: watchlist.length >= 2
+                  ? _buildIndexCard()
+                  : Center(
+                child: Text(
+                  "Add at least 2 stocks to see the index card",
+                  style: TextStyle(color: Colors.white70),
+                ),
+              ),
+            ),
+          ),
+          // The rest of your content (70%)
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                children: [
+                  if (_showSearchField) ...[
+                    TextField(
+                      controller: _tickerController,
+                      decoration: InputDecoration(
+                        labelText: "Enter Stock Name or Ticker",
+                        border: OutlineInputBorder(),
+                        suffixIcon: IconButton(
+                          icon: Icon(Icons.search),
+                          onPressed: () =>
+                              fetchStockData(_tickerController.text.trim()),
+                        ),
+                      ),
+                      onChanged: (value) => searchStocksByName(value),
+                    ),
+                    if (searchResults.isNotEmpty)
+                      Container(
+                        constraints: BoxConstraints(maxHeight: 200),
+                        child: ListView.builder(
+                          shrinkWrap: true,
+                          itemCount: searchResults.length,
+                          itemBuilder: (context, index) {
+                            final stock = searchResults[index];
+                            return ListTile(
+                              title: Text(
+                                  stock['shortname'] ?? stock['symbol']),
+                              subtitle: Text(stock['symbol']),
+                              onTap: () {
+                                fetchStockData(stock['symbol']);
+                                setState(() => searchResults = []);
+                              },
+                            );
+                          },
+                        ),
+                      ),
+                    SizedBox(height: 16),
+                  ],
+                  Expanded(
+                    child: watchlist.isEmpty
+                        ? Center(
+                      child: Text(
+                        "Your watchlist is empty\nAdd some stocks to get started",
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 18, color: Colors.grey),
+                      ),
+                    )
+                        : ListView.builder(
+                      itemCount: watchlist.length,
+                      itemBuilder: (context, index) {
+                        final stock = watchlist[index];
+                        return Card(
+                          child: ListTile(
+                            title: Text("${stock['ticker']}"),
+                            subtitle: Text(
+                                "Price: ${stock['latestPrice'] ?? 'N/A'}"),
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                IconButton(
+                                  icon: Icon(Icons.send),
+                                  onPressed: () => sendStockData(stock),
+                                ),
+                                IconButton(
+                                  icon: const Icon(Icons.delete),
+                                  onPressed: () => deleteStock(index),
+                                )
+                              ],
+                            ),
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      StockDetailsScreen(stock: stock),
+                                ),
+                              );
+                            },
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+  }

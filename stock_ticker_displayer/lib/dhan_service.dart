@@ -28,8 +28,8 @@ class DhanService {
     }
   }
 
-  Future<List<Map<String, dynamic>>> getOrderBook() async {
-    final Uri url = Uri.parse("https://api.dhan.co/tradeHistory/2023-01-01/2025-03-01/1");
+  Future<List<Map<String, dynamic>>> getPastTrades(String fromDate, String toDate) async {
+    final Uri url = Uri.parse("https://api.dhan.co/tradeHistory/$fromDate/$toDate/0");
 
     try {
       final response = await http.get(
